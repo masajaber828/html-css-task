@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testimonials – roadmap.sh style</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Inter',sans-serif;background:#0b0e14;color:#111;padding:40px 16px}
+    .page{max-width:1120px;margin:auto}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    @media (max-width:820px){.grid{grid-template-columns:1fr}}
+    .bubble{position:relative;border-radius:18px;padding:20px;border:2px solid #1f232b;background:#fff}
+    .bubble.dark{background:#1a1f29;color:#e6eaf2;border-color:#1a1f29}
+    .bubble.light{background:#fff;color:#171a1f}
+    .muted{opacity:.8}
+    .author{display:flex;gap:12px;align-items:center;margin-top:16px}
+    .avatar{width:40px;height:40px;border-radius:999px;object-fit:cover;border:2px solid #fff}
+    .name{font-weight:600}.title{font-size:12px;opacity:.7}
+    .tail{position:absolute;bottom:-10px;left:18px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent}
+    .bubble.dark .tail{border-top:10px solid #1a1f29}
+    .bubble.light .tail{border-top:10px solid #fff}
+    .photo{border-radius:18px;overflow:hidden;border:2px solid #1f232b}
+    .photo img{display:block;width:100%;height:100%;object-fit:cover}
+    .bubble.rating{background:#11161f;color:#f4f7ff;border-color:#11161f}
+    .stars{letter-spacing:4px;font-size:20px;margin-bottom:6px}
+    .name-xl{margin:0;font-size:22px}
+    .bubble.rating .title{color:#9aa7bd;margin-bottom:8px}
+    .carousel{grid-column:1/-1;background:#fff;border-radius:18px;border:2px solid #1f232b;padding:24px}
+    .carousel p{margin:0 0 16px;line-height:1.6}
+    .carousel-controls{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 8px}
+    .nav{width:40px;height:40px;border-radius:999px;border:1px solid #d0d7e2;background:#fff;font-size:22px;cursor:pointer}
+    .thumbs{display:flex;gap:12px}
+    .thumb{width:48px;height:48px;padding:0;border-radius:999px;border:2px solid transparent;background:transparent;cursor:pointer}
+    .thumb img{width:100%;height:100%;border-radius:999px;object-fit:cover}
+    .thumb.is-active{border-color:#11161f}
+    .author.center{justify-content:center;display:flex;align-items:center;gap:8px}
+    .author.center .avatar{width:56px;height:56px}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="grid">
+      <article class="bubble dark">
+        <p>I have been solving all the project ideas on roadmap.sh and I am surprised how far I have come from where I started.</p>
+        <p class="muted">Highly recommended!</p>
+        <div class="author">
+          <img src="jad.jpeg" alt="Artem Jones" class="avatar">
+          <div>
+            <div class="name">Artem Jones</div>
+            <div class="title">Junior Frontend Developer</div>
+          </div>
+        </div>
+        <span class="tail"></span>
+      </article>
+
+      <article class="bubble light">
+        <p>Since starting my career in 2021, I have only followed one resource, <strong>roadmap.sh</strong>, it truly helped me go from 0 to having a job and changing the financial trajectory of my family</p>
+        <div class="author">
+          <img src="jad.jpeg" alt="Artem Jones" class="avatar">
+          <div>
+            <div class="name">Artem Jones</div>
+            <div class="title">Junior Frontend Developer</div>
+          </div>
+        </div>
+        <span class="tail"></span>
+      </article>
+
+      <figure class="photo">
+        <img src="lona.jpeg" alt="Jackie">
+      </figure>
+
+      <article class="bubble rating">
+        <div class="stars">★★★★★</div>
+        <h3 class="name-xl">Jackie Mackle</h3>
+        <div class="title">Engineering Manager</div>
+        <p>I find myself recommending roadmap.sh to all the internees or junior developers. It's a great way to skill up and grow in your career.</p>
+      </article>
+
+      <article class="carousel">
+        <p><strong>roadmap.sh</strong> is an incredible resource. I was fortunate to discover it during my university days in 2018. Back then, it was just a single repository with three images. It's amazing to see how much impact it has had on millions of lives since then.</p>
+        <div class="carousel-controls">
+          <button class="nav">&#8249;</button>
+          <div class="thumbs">
+            <button class="thumb is-active"><img src="omar.jpg" alt="1"></button>
+            <button class="thumb"><img src="lona.jpeg" alt="2"></button>
+            <button class="thumb"><img src="sara.jpg" alt="3"></button>
+          </div>
+          <button class="nav">&#8250;</button>
+        </div>
+        <div class="author center">
+          <img src="jad.jpeg" alt="Artem Jones" class="avatar">
+          <div class="name">Artem Jones</div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const thumbs = document.querySelectorAll('.thumb');
+    thumbs.forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        thumbs.forEach(t=>t.classList.remove('is-active'));
+        btn.classList.add('is-active');
+      });
+    });
+  </script>
+</body>
+</html>
