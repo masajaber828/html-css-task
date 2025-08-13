@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GitHub Repository Finder</title>
+  <style>
+    /* ---- Basic reset / layout ---- */
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --muted: #bfc6cc;
+      --accent: #111827;
+      --success: #e6fffa;
+      --error: #ffe6e6;
+      --primary: #111827;
+      --button: #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: #111;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+    .wrap {
+      width: 100%;
+      max-width: 920px;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 6px 18px rgba(15,15,20,0.06);
+    }
+
+    header { display:flex; gap:12px; align-items:center; margin-bottom:18px; }
+    header .logo {
+      width:36px; height:36px; border-radius:8px; background:#111827;
+    }
+    header h1 { font-size:18px; margin:0; }
+
+    .controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+    select {
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid #d7dbe0;
+      min-width:220px;
+      font-size:14px;
+      background:white;
+    }
+    button {
+      padding:10px 14px;
+      border-radius:8px;
+      border: none;
+      cursor:pointer;
+      font-weight:600;
+      background: var(--button);
+      color: white;
+    }
+    button[disabled] { opacity:.5; cursor: not-allowed; }
+
+    /* message boxes */
+    .message {
+      border-radius:10px;
+      padding:18px;
+      background:#f0f4f6;
+      color:#333;
+      margin-bottom:12px;
+    }
+    .message.loading { background: #eef2ff; }
+    .message.error { background: #ffeef0; border:1px solid #ffccd0; color:#6a1b21; }
+
+    /* repo card */
+    .repo-card {
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      background: var(--card);
+      border-radius:10px;
+      padding:14px;
+      border:1px solid #e6e9ec;
+      margin-bottom:12px;
+    }
+    .avatar {
+      width:56px; height:56px; border-radius:8px; flex:0 0 56px; object-fit:cover;
+    }
+    .repo-main { flex:1; }
+    .repo-main h3 { margin:0; font-size:16px; }
+    .repo-main p { margin:8px 0 10px; color:#4b5563; font-size:14px; }
+    .meta { display:flex; gap:12px; align-items:center; font-size:13px; color:#6b7280; }
+    .badge { display:inline-flex; gap:8px; align-items:center; padding:6px 8px; border-radius:999px; background:#f3f4f6; font-weight:600; font-size:12px; }
+
+    /* footer help text */
+    .help { color:var(--muted); font-size:13px; margin-top:6px; }
+
+    /* small spinner */
+    .spinner {
+      width:18px; height:18px; border-radius:50%;
+      border:3px solid rgba(0,0,0,0.08);
+      border-top-color: rgba(0,0,0,0.6);
+      animation: spin 1s linear infinite;
+      display:inline-block; vertical-align:middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* responsive */
+    @media (max-width:520px) {
+      .controls { flex-direction:column; align-items:stretch; }
+      select { width:100%; }
+      .repo-card { flex-direction:column; align-items:stretch; }
+      .avatar { width:100%; height:140px; border-radius:8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="application">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>GitHub Repository Finder</h1>
+        <div class="help">Pick a language to fetch a random popular repository.</div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <label for="lang" style="display:none">Language</label>
+      <select id="lang" aria-label="Choose programming language">
+        <option value="">-- Select a Language --</option>
+      </select>
+
+      <button id="refreshBtn" disabled title="Refresh random repository">Refresh</button>
+      <button id="retryBtn" style="display:none;background:#c62828">Retry</button>
+    </div>
+
+    <div id="status" aria-live="polite"></div>
+
+    <div id="resultArea" aria-live="polite"></div>
+
+    <div style="margin-top:8px; color:#6b7280; font-size:13px;">
+      Tip: If you hit GitHub rate limits, add a personal token (see README in code).
+    </div>
+  </div>
+
+  <script>
+    /*********
+     * Optional: add GitHub token here if you face rate limit issues.
+     * Create a personal access token on GitHub (no scopes required for public search).
+     * Then paste it between the quotes. (Don't commit to public repos)
+     *********/
+    const GITHUB_TOKEN = ''; // <-- optional
+
+    const languages = [
+      "JavaScript","Python","Java","C#","C++","TypeScript","Go","Ruby","PHP","Swift","Kotlin","Rust"
+    ];
+
+    const langSelect = document.getElementById('lang');
+    const statusDiv = document.getElementById('status');
+    const resultArea = document.getElementById('resultArea');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const retryBtn = document.getElementById('retryBtn');
+
+    // populate languages
+    languages.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l;
+      opt.textContent = l;
+      langSelect.appendChild(opt);
+    });
+
+    // state helpers
+    function setEmptyState() {
+      resultArea.innerHTML = '';
+      statusDiv.innerHTML = <div class="message">Please select a language to search.</div>;
+      refreshBtn.disabled = true;
+      retryBtn.style.display = 'none';
+    }
+
+    function setLoadingState(lang) {
+      resultArea.innerHTML = '';
+      statusDiv.innerHTML = <div class="message loading"><span class="spinner" aria-hidden="true"></span> Loading repositories for <strong>${escapeHtml(lang)}</strong>, please wait...</div>;
+      refreshBtn.disabled = true;
+      retryBtn.style.display = 'none';
+    }
+
+    function setErrorState(message) {
+      resultArea.innerHTML = '';
+      statusDiv.innerHTML = <div class="message error">Error: ${escapeHtml(message)}</div>;
+      retryBtn.style.display = 'inline-block';
+      refreshBtn.disabled = true;
+    }
+
+    function showRepo(repo) {
+      statusDiv.innerHTML = '';
+      retryBtn.style.display = 'none';
+      refreshBtn.disabled = false;
+
+      const html = `
+        <div class="repo-card" role="region" aria-label="Repository result">
+          <img class="avatar" src="${repo.owner.avatar_url}" alt="${escapeHtml(repo.owner.login)} avatar" />
+          <div class="repo-main">
+            <h3><a href="${repo.html_url}" target="_blank" rel="noopener noreferrer">${escapeHtml(repo.full_name)}</a></h3>
+            <p>${escapeHtml(repo.description || 'No description provided.')}</p>
+            <div class="meta">
+              <span class="badge">${escapeHtml(repo.language || 'Unknown')}</span>
+              <span>⭐ ${numberWithCommas(repo.stargazers_count)}</span>
+              <span>🍴 ${numberWithCommas(repo.forks_count)}</span>
+              <span>🐞 ${numberWithCommas(repo.open_issues_count)}</span>
+              <span style="margin-left:auto; color:#6b7280">Updated: ${new Date(repo.updated_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      resultArea.innerHTML = html;
+    }
+
+    // helper formatting
+    function numberWithCommas(x){ return (x||0).toLocaleString(); }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; }); }
+
+    // fetch function
+    async function fetchRandomRepoForLanguage(lang) {
+      setLoadingState(lang);
+      const perPage = 100;
+      // search for repos with at least 1 star, sorted by stars
+      const q = `language:${lang} stars:>0 `;
+      const url = https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=${perPage};
+
+      const headers = { 'Accept': 'application/vnd.github+json' };
+      if (GITHUB_TOKEN) headers['Authorization'] = token ${GITHUB_TOKEN};
+
+      try {
+        const res = await fetch(url, { headers });
+        if (!res.ok) {
+          // handle rate limit specifically
+          if (res.status === 403) {
+            throw new Error('Rate limit or forbidden (status 403). Consider adding a GitHub token.');
+          }
+          throw new Error(Network error: ${res.status} ${res.statusText});
+        }
+        const data = await res.json();
+        const items = data.items || [];
+        if (!items.length) {
+          throw new Error('No repositories found for this language.');
+        }
+        // pick random repo from results
+        const idx = Math.floor(Math.random() * items.length);
+        const repo = items[idx];
+        showRepo(repo);
+      } catch (err) {
+        console.error(err);
+        setErrorState(err.message || 'Unknown error');
+      }
+    }
+
+    // event listeners
+    langSelect.addEventListener('change', (e) => {
+      const lang = e.target.value;
+      if (!lang) {
+        setEmptyState();
+        return;
+      }
+      fetchRandomRepoForLanguage(lang);
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      const lang = langSelect.value;
+      if (!lang) return;
+      fetchRandomRepoForLanguage(lang);
+    });
+
+    retryBtn.addEventListener('click', () => {
+      const lang = langSelect.value;
+      if (!lang) { setEmptyState(); return; }
+      fetchRandomRepoForLanguage(lang);
+    });
+
+    // initial
+    setEmptyState();
+  </script>
+</body>
+</html>
